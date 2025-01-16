@@ -18,7 +18,7 @@
  * This source code is licensed under the MIT License. For more details, see
  * the LICENSE file in the root directory of this project.
  *
- * Version: v1.0
+ * Version: v1.1.0
  * Author: Ghost
  * Created On: 1-16-2025
  * Last Modified: 1-16-2025
@@ -36,6 +36,7 @@ namespace FracLib {
     public: // ATTRIBUTES
         int numerator;
         int denominator;
+        int whole;
 
     public: // CONSTRUCTORS
         /// @brief Default constructor. Initializes the fraction to `0/1`.
@@ -51,7 +52,18 @@ namespace FracLib {
         /// @param isSimplifying Determines whether the fraction will attempt to simplify or not.
         /// @throws std::invalid_argument If the denominator is zero.
         /// @example Frac f(3, 4); // Creates a fraction representing 3/4
-        Frac(int n, int d, bool isSimplifying = false);
+        explicit Frac(int n, int d, bool isSimplifying = false);
+        /// @brief Constructs a mixed fraction object.
+        /// This constructor initializes a `Frac` object with a whole number part, a numerator, 
+        /// and a denominator. The whole number (`w`) represents the integer part of the fraction, 
+        /// while the numerator (`n`) and denominator (`d`) represent the fractional part.
+        /// @param w The whole number part of the mixed fraction.
+        /// @param n The numerator of the fractional part.
+        /// @param d The denominator of the fractional part. Must not be zero.
+        /// @param isSimplifying Determines whether the fraction will attempt to simplify or not.
+        /// @note If the denominator is zero, the behavior is undefined. Ensure the denominator 
+        ///       is properly validated before calling this constructor.
+        explicit Frac(int w, int n, int d, bool isSimplifying = false);
         /// @brief Constructs a Frac object from a decimal number by approximating its fractional equivalent.
         /// The fraction is then simplified automatically.
         /// @param decimal The decimal number to convert to a fraction.
@@ -62,10 +74,13 @@ namespace FracLib {
         /// @param isSimplifying Determines whether the fraction will simplify or not.
         /// @throws std::invalid_argument if the string is not properly formatted or if the denominator is zero.
         /// @example Frac f("3/4"); // Creates a fraction representing 3/4
-        Frac(const char* fracStr, bool isSimplifying = false);
+        explicit Frac(const char* fracStr, bool isSimplifying = false);
         /// @brief Copy constructor. Creates a new Frac object as a copy of an existing Frac.
         /// @param other The Frac object to copy.
         Frac(Frac& other);
+        /// @brief Copy constructor. Creates a new Frac object as a copy of an existing const Frac.
+        /// @param other The Frac object to copy.
+        Frac(const Frac& other);
 
     public: // OPERATORS
         
@@ -204,7 +219,15 @@ namespace FracLib {
         /// @param frac fraction to get reciprocal of
         /// @return fraction reciprocal
         static Frac toReciprocal(const Frac& frac);
-
+        /// @brief Converts a mixed fraction to an improper fraction.
+        /// This function takes a mixed fraction (with a whole number part, numerator, and denominator) 
+        /// and converts it into an improper fraction. The resulting fraction has no whole number part, 
+        /// and its numerator is adjusted to represent the entire fraction in improper form.
+        /// @param frac A `Frac` object representing the mixed fraction to be converted.
+        /// @return A `Frac` object representing the improper fraction equivalent of the input.
+        /// @note The input fraction (`frac`) remains unmodified. The function creates and returns 
+        ///       a new `Frac` object with the converted values.
+        static Frac toImproper(const Frac& frac);
     private: // PRIVATE FUNCTIONS
         /// @brief Simplifies this object fraction(numerator/denominator) using GCD method.
         void simplify();

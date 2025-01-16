@@ -1,6 +1,6 @@
 /******************************************************************************
  * Project: FracLib
- * File: Frac.h
+ * File: Frac.cpp
  * Description:
  *  This source file implements the `Frac` class, which provides robust support 
  *  for performing arithmetic operations, comparisons, and utility functions on 
@@ -16,7 +16,7 @@
  *    or decrement operations.
  *  - Utility functions for simplifying fractions, converting fractions to 
  *    strings, and parsing complex fraction formats.
- *  - Static helper methods for validation, such as overflow checks and 
+ *  - Static helper methods for validation, such as overflow checks, improper fraction and 
  *    reciprocal calculations.
  *  
  *  This implementation ensures mathematical correctness and robustness, making 
@@ -27,7 +27,7 @@
  * This source code is licensed under the MIT License. For more details, see
  * the LICENSE file in the root directory of this project.
  *
- * Version: v1.0
+ * Version: v1.1.0
  * Author: Ghost
  * Created On: 1-16-2025
  * Last Modified: 1-16-2025
@@ -36,6 +36,7 @@
 #include "../include/frac.h"
 #include <limits>
 #include <sstream>
+#include <iostream>
 #include <cmath>
 
 namespace FracLib {
@@ -74,25 +75,38 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Constructors
     //\\\\\\\\\\\\\\\\\\\\/
-    Frac::Frac() : numerator(0), denominator(1) {}
-    Frac::Frac(int n) : numerator(n), denominator(1) {}
-    Frac::Frac(int n, int d, bool isSimplifying) : numerator(n), denominator(d) {
+    Frac::Frac() : numerator(0), denominator(1), whole(0) {}
+    Frac::Frac(int n) : numerator(n), denominator(1), whole(0) {}
+    Frac::Frac(int n, int d, bool isSimplifying) : numerator(n), denominator(d), whole(0) {
         if (denominator == 0){
             throw std::invalid_argument(ZERO_DIVISOR_ERROR);
         }
         // Optional
         if (isSimplifying) simplify();
     }
-    Frac::Frac(float decimal){
+    Frac::Frac(int w, int n, int d, bool isSimplifying) : numerator(n), denominator(d), whole(w) {
+        if (denominator == 0){
+            throw std::invalid_argument(ZERO_DIVISOR_ERROR);
+        }
+        // Optional
+        if (isSimplifying) simplify();
+    }
+    Frac::Frac(float decimal) : whole(0) {
         toFrac(decimal);
     }
-    Frac::Frac(const char* fracStr, bool isSimplifying){
+    Frac::Frac(const char* fracStr, bool isSimplifying) : whole(0) {
         std::istringstream iss(fracStr);
         parseFromStream(iss, isSimplifying);
     }
     Frac::Frac(Frac& other){
         this->numerator = other.numerator;
         this->denominator = other.denominator;
+        this->whole = other.whole;
+    }
+    Frac::Frac(const Frac& other){
+        this->numerator = other.numerator;
+        this->denominator = other.denominator;
+        this->whole = other.whole;
     }
 
 
@@ -529,6 +543,8 @@ namespace FracLib {
     // Misc Operators
     //\\\\\\\\\\\\\\\\\\\\/
     std::ostream& operator<<(std::ostream& os, const Frac& frac) {
+        if (frac.whole != 0)
+            os << frac.whole << " ";
         os << frac.numerator << "/" << frac.denominator;
         return os;
     }
@@ -602,6 +618,15 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Methods
     //\\\\\\\\\\\\\\\\\\\\/
+    Frac Frac::toImproper(const Frac& frac) {
+        Frac result = frac;
+
+        result.numerator = (result.whole * result.denominator) + result.numerator;
+        result.whole = 0;
+
+        return result;
+    }
+
     Frac Frac::toReciprocal(const Frac& frac){
         if (frac.numerator == 0){
             throw std::invalid_argument(ZERO_DIVISOR_ERROR);
@@ -620,21 +645,35 @@ namespace FracLib {
     
     void Frac::simplify(){
         if(denominator == 0) return; // quick fix for 0
+        if (numerator == 0) { // Handle the case where numerator is 0
+            whole = 0;
+            denominator = 1; // Standardize to 0/1
+            return;
+        }
+
+        // Determine the whole part and adjust the numerator
+        whole += numerator / denominator;
+        numerator %= denominator;
+
+        // If the numerator is negative, adjust the whole and numerator
+        if (numerator < 0 && whole != 0) {
+            numerator += std::abs(denominator);
+            whole -= (numerator > 0) ? 1 : 0;
+        }
+
 
         int a = std::abs(numerator); // Use absolute values
         int b = std::abs(denominator);
         int gcd = 0;
-        while (true)
-        {
+        while (true) {
             if (a > b){
-                a = (a % b);
+                a %= b;
                 if(a == 0) {
                     gcd = b;
                     break;
                 }
-            }
-            else {
-                b = (b % a);
+            } else {
+                b %= a;
                 if(b == 0) {
                     gcd = a;
                     break;
@@ -642,6 +681,7 @@ namespace FracLib {
             }
         }
         
+        // Simplify the numerator and denominator
         numerator /= gcd;
         denominator /= gcd;
 

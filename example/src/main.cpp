@@ -1,12 +1,7 @@
-/**************************************************************************
-*  main.cpp                                                          
-***************************************************************************
-*  This file is not part of FracLib Library, it is an example standalone exe.                                                           
-***************************************************************************
-*  Copyright (c) 2025-present Ghost.    
-***************************************************************************
-*  Example Project
-
+/******************************************************************************
+ * Project: MathApp
+ * File: main.cpp
+ * Description:
     This example file is meant to experiment with the library to familiarize
     yourself with FracLib features.
 
@@ -18,7 +13,19 @@
     ensure you rebuild using ./build when changes are made.
 
     Enjoy!                                          
-***************************************************************************/
+ * 
+ * This file is not part of FracLib Library, it is an example standalone exe.
+ * 
+ * Copyright © 2025 Ghost - Two Byte Tech. All Rights Reserved.
+ *
+ * This source code is licensed under the MIT License. For more details, see
+ * the LICENSE file in the root directory of this project.
+ *
+ * Version: v1.1.0
+ * Author: Ghost
+ * Created On: 1-16-2025
+ * Last Modified: 1-16-2025
+ *****************************************************************************/
 
 #include "frac.h"
 #include <iostream>
@@ -34,8 +41,8 @@ int main(){
     FracLib::Frac frac1(0.5f); // use decimals!. 
     print("Construction by decimal", frac1);
 
-    FracLib::Frac frac4("5/10", true); // use strings!
-    print("Construction by string", frac4);
+    FracLib::Frac frac7("5/10", true); // use strings!
+    print("Construction by string", frac7);
 
     frac1 = 0.6f; // Reassign with a decimal 
     print("Reassigned by decimal", frac1);
@@ -103,7 +110,13 @@ int main(){
         print("Relational 2 3/5 greater than", frac1);
     }
 
+    // Improper Fraction
+    FracLib::Frac frac8(2,1,2); // Construct improper fraction (whole, numerator, denominator)
+    FracLib::Frac frac9 = FracLib::Frac::toImproper(frac8); // converts and return new frac object
+    print("Improper fraction from 2 1/2 to", frac9);
+
     // INPUT: accepts decimal(0.5, 1.5) or string(2/4, 1 1/2) representations
+    std::cout << "Input a fraction: " << std::flush;
     std::cin >> frac1;
     FracLib::Frac::SimplifyFrac(frac1); // when you can't perform inline or just want to simplify later
     print("User Input display", frac1);
