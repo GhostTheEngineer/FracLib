@@ -1,0 +1,8 @@
+# Directories
+out
+other
+bin
+
+# VS Code
+settings.json
+tasks.json

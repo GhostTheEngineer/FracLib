@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Set the include directory for the package
+set(FracLib_INCLUDE_DIRS "@PACKAGE_INCLUDE_INSTALL_DIR@")
+
+# Make the include directory available
+set(FracLib_LIBRARIES FracLib::Frac)
+
+# Include the target exports
+include("${CMAKE_CURRENT_LIST_DIR}/FracTargets.cmake")
