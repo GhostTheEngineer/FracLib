@@ -394,34 +394,84 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Increment Decrement Operators
     //\\\\\\\\\\\\\\\\\\\\/
-    Frac& Frac::operator++(){
-        if (willAdditionOverflow(this->numerator, 1)) {
-            throw std::overflow_error(OVERFLOW_ERROR);
+    void incrementLogic(int& whole, int& numerator, int& denominator, bool isPrefix){
+        if (whole != 0) {
+            
+            numerator += whole * denominator; // Convert to improper fraction
+
+            if (willAdditionOverflow(numerator, 1)) throw std::overflow_error(Frac::OVERFLOW_ERROR);
+        
+            if (isPrefix)
+                ++numerator;
+            else
+                numerator++;
+
+            // Convert back to mixed fraction
+            whole = numerator / denominator;
+            numerator %= denominator;
+
+            // Ensure denominator is positive
+            if (denominator < 0) {
+                numerator = -numerator;
+                denominator = -denominator;
+            }
         }
-        ++numerator;
+        else {
+            if (willAdditionOverflow(numerator, 1)) throw std::overflow_error(Frac::OVERFLOW_ERROR);
+            if (isPrefix)
+                ++numerator;
+            else
+                numerator++;
+        }
+    }
+
+    void decrementLogic(int& whole, int& numerator, int& denominator, bool isPrefix){
+        if (whole != 0) {
+            
+            numerator += whole * denominator; // Convert to improper fraction
+
+            if (willAdditionOverflow(numerator, -1)) throw std::overflow_error(Frac::OVERFLOW_ERROR);
+        
+            if (isPrefix)
+                --numerator;
+            else
+                numerator--;
+
+            // Convert back to mixed fraction
+            whole = numerator / denominator;
+            numerator %= denominator;
+
+            // Ensure denominator is positive
+            if (denominator < 0) {
+                numerator = -numerator;
+                denominator = -denominator;
+            }
+        }
+        else {
+            if (willAdditionOverflow(numerator, 1)) throw std::overflow_error(Frac::OVERFLOW_ERROR);
+            if (isPrefix)
+                --numerator;
+            else
+                numerator--;
+        }
+    }
+
+    Frac& Frac::operator++(){
+        incrementLogic(this->whole, this->numerator, this->denominator, true);
         return *this;
     }
     Frac& Frac::operator--(){
-        if (willSubtractionOverflow(this->numerator, 1)) {
-            throw std::overflow_error(OVERFLOW_ERROR);
-        }
-        --numerator;
+        decrementLogic(this->whole, this->numerator, this->denominator, true);
         return *this;
     }
     Frac Frac::operator++(int){
-        if (willAdditionOverflow(this->numerator, 1)) {
-            throw std::overflow_error(OVERFLOW_ERROR);
-        }
         Frac temp = *this;
-        numerator++;
+        incrementLogic(this->whole, this->numerator, this->denominator, false);
         return temp; 
     }
     Frac Frac::operator--(int){
-        if (willSubtractionOverflow(this->numerator, 1)) {
-            throw std::overflow_error(OVERFLOW_ERROR);
-        }
         Frac temp = *this;
-        numerator--; 
+        decrementLogic(this->whole, this->numerator, this->denominator, false);
         return temp;
     }
     
@@ -431,6 +481,7 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     Frac Frac::operator-(){
         // Handles negating numerator (+/-)
+        if (this->whole != 0) return Frac(-this->whole, this->numerator, this->denominator);
         return Frac(-this->numerator, this->denominator);
     }
 
@@ -439,8 +490,12 @@ namespace FracLib {
     // Comparision Operators
     //\\\\\\\\\\\\\\\\\\\\/
     bool Frac::operator==(const Frac& other) const {
+        // Convert both fractions to improper form
+        int lhsNumerator = this->whole * this->denominator + this->numerator;
+        int rhsNumerator = other.whole * other.denominator + other.numerator;
+
         // This cross-multiplication avoids the need to reduce the fractions to their simplest forms.
-        return (this->numerator * other.denominator) == (other.numerator * this->denominator);
+        return (lhsNumerator * other.denominator) == (rhsNumerator * this->denominator);
     }
     bool Frac::operator==(float other) const {
         return (*this == Frac(other));
@@ -472,8 +527,12 @@ namespace FracLib {
     }
 
     bool Frac::operator>=(const Frac& other) const {
+        // Convert both fractions to improper form
+        int lhsNumerator = this->whole * this->denominator + this->numerator;
+        int rhsNumerator = other.whole * other.denominator + other.numerator;
+
         // This cross-multiplication avoids the need to reduce the fractions to their simplest forms.
-        return (this->numerator * other.denominator) >= (other.numerator * this->denominator);
+        return (lhsNumerator * other.denominator) >= (rhsNumerator * this->denominator);
     }
     bool Frac::operator>=(float other) const {
         return (*this >= Frac(other));
@@ -489,8 +548,12 @@ namespace FracLib {
     }
 
     bool Frac::operator<=(const Frac& other) const {
+        // Convert both fractions to improper form
+        int lhsNumerator = this->whole * this->denominator + this->numerator;
+        int rhsNumerator = other.whole * other.denominator + other.numerator;
+
         // This cross-multiplication avoids the need to reduce the fractions to their simplest forms.
-        return (this->numerator * other.denominator) <= (other.numerator * this->denominator);
+        return (lhsNumerator * other.denominator) <= (rhsNumerator * this->denominator);
     }
     bool Frac::operator<=(float other) const {
         return (*this <= Frac(other));
@@ -506,8 +569,12 @@ namespace FracLib {
     }
 
     bool Frac::operator>(const Frac& other) const {
+        // Convert both fractions to improper form
+        int lhsNumerator = this->whole * this->denominator + this->numerator;
+        int rhsNumerator = other.whole * other.denominator + other.numerator;
+
         // This cross-multiplication avoids the need to reduce the fractions to their simplest forms.
-        return (this->numerator * other.denominator) > (other.numerator * this->denominator);
+        return (lhsNumerator * other.denominator) > (rhsNumerator * this->denominator);
     }
     bool Frac::operator>(float other) const {
         return (*this > Frac(other));
@@ -523,8 +590,12 @@ namespace FracLib {
     }
 
     bool Frac::operator<(const Frac& other) const {
+        // Convert both fractions to improper form
+        int lhsNumerator = this->whole * this->denominator + this->numerator;
+        int rhsNumerator = other.whole * other.denominator + other.numerator;
+
         // This cross-multiplication avoids the need to reduce the fractions to their simplest forms.
-        return (this->numerator * other.denominator) < (other.numerator * this->denominator);
+        return (lhsNumerator * other.denominator) < (rhsNumerator * this->denominator);
     }
     bool Frac::operator<(float other) const {
         return (*this < Frac(other));
@@ -627,23 +698,23 @@ namespace FracLib {
         return result;
     }
 
-    Frac Frac::toReciprocal(const Frac& frac){
+    Frac Frac::toReciprocal(const Frac& frac) {
         if (frac.numerator == 0){
             throw std::invalid_argument(ZERO_DIVISOR_ERROR);
         }
         return Frac(frac.denominator, frac.numerator);
     }
 
-    void Frac::SimplifyFrac(Frac& frac){
+    void Frac::SimplifyFrac(Frac& frac) {
         frac.simplify();
     }
 
-    Frac Frac::Simplify(Frac frac){
+    Frac Frac::Simplify(Frac frac) {
         frac.simplify();
         return frac;
     }
     
-    void Frac::simplify(){
+    void Frac::simplify() {
         if(denominator == 0) return; // quick fix for 0
         if (numerator == 0) { // Handle the case where numerator is 0
             whole = 0;
@@ -692,19 +763,22 @@ namespace FracLib {
         }
     }
 
-    std::string Frac::toString(const Frac& frac){
+    std::string Frac::toString(const Frac& frac) {
+        if (frac.whole != 0) return std::string(std::to_string(frac.whole) + " " + std::to_string(frac.numerator) + "/" + std::to_string(frac.denominator));
         return std::string(std::to_string(frac.numerator) + "/" + std::to_string(frac.denominator));
     }
     
-    float Frac::toFloat(const Frac& frac){
-        return (float)frac.numerator / (float)frac.denominator;
+    float Frac::toFloat(const Frac& frac) {
+        int n = (frac.whole * frac.denominator) + frac.numerator; // attempt to form improper first
+        return (float)n / (float)frac.denominator;
     }
     
-    double Frac::toDouble(const Frac& frac){
-        return (double)frac.numerator / (double)frac.denominator;
+    double Frac::toDouble(const Frac& frac) {
+        int n = (frac.whole * frac.denominator) + frac.numerator; // attempt to form improper first
+        return (double)n / (double)frac.denominator;
     }
 
-    void Frac::toFrac(float decimal){
+    void Frac::toFrac(float decimal) {
         // Save sign information and make decimal absolute value
         int sign = (decimal < 0) ? -1 : 1;
         decimal = std::abs(decimal);

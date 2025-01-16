@@ -2,7 +2,11 @@
 out
 other
 bin
+ignore
 
 # VS Code
 settings.json
 tasks.json
+
+# Files
+*.exe
