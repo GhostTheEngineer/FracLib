@@ -107,18 +107,22 @@ namespace FracLib {
         
         // Reversed operand order
         friend Frac operator+(int value, const Frac& frac);
+        friend Frac operator+(int value, Frac& frac);
         friend Frac operator+(float value, Frac& frac);
         friend Frac operator+(const char* value, Frac& frac);
 
         friend Frac operator-(int value, const Frac& frac);
+        friend Frac operator-(int value, Frac& frac);
         friend Frac operator-(float value, Frac& frac);
         friend Frac operator-(const char* value, Frac& frac);
 
         friend Frac operator*(int value, const Frac& frac);
+        // friend Frac operator*(int value, Frac& frac);
         friend Frac operator*(float value, Frac& frac);
         friend Frac operator*(const char* value, Frac& frac);
 
         friend Frac operator/(int value, const Frac& frac);
+        friend Frac operator/(int value, Frac& frac);
         friend Frac operator/(float value, Frac& frac);
         friend Frac operator/(const char* value, Frac& frac);
         

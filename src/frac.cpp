@@ -47,6 +47,7 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Utilities
     //\\\\\\\\\\\\\\\\\\\\/
+
     bool willMultiplicationOverflow(int a, int b) {
         // Handle zero cases
         if (a == 0 || b == 0) return false;
@@ -75,6 +76,7 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Constructors
     //\\\\\\\\\\\\\\\\\\\\/
+
     Frac::Frac() : numerator(0), denominator(1), whole(0) {}
     Frac::Frac(int n) : numerator(n), denominator(1), whole(0) {}
     Frac::Frac(int n, int d, bool isSimplifying) : numerator(n), denominator(d), whole(0) {
@@ -88,8 +90,7 @@ namespace FracLib {
         if (denominator == 0){
             throw std::invalid_argument(ZERO_DIVISOR_ERROR);
         }
-        // Optional
-        if (isSimplifying) simplify();
+        simplify();
     }
     Frac::Frac(float decimal) : whole(0) {
         toFrac(decimal);
@@ -113,26 +114,81 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Basic Arithmetic Operators
     //\\\\\\\\\\\\\\\\\\\\/
-    Frac Frac::operator+(const Frac& other) {
-        // Check for overflow in the intermediate calculations
-        if (willMultiplicationOverflow(this->numerator, other.denominator) || 
-            willMultiplicationOverflow(other.numerator, this->denominator) || 
-            willMultiplicationOverflow(this->denominator, other.denominator) || 
-            willAdditionOverflow(this->numerator * other.denominator, other.numerator * this->denominator)) {
-            throw std::overflow_error(OVERFLOW_ERROR);
+
+    enum class ARYTHMIC_TYPE {ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION};
+
+    void calcIntegerAndFraction(const Frac& frac, int wholeNumber, int& resultWhole, int& resultNumerator, int& resultDenominator, ARYTHMIC_TYPE type, bool reversed = false) {
+        // Convert to mixed fraction
+        int mixedNumerator = (frac.whole * frac.denominator) + frac.numerator;
+        
+        // perform operation
+        switch (type)
+        {
+        case ARYTHMIC_TYPE::ADDITION:
+            resultNumerator = mixedNumerator + (wholeNumber * frac.denominator);
+            resultDenominator = frac.denominator * 1;
+            break;
+        
+        case ARYTHMIC_TYPE::SUBTRACTION:
+            resultNumerator = reversed ? (wholeNumber * frac.denominator) - mixedNumerator : mixedNumerator - (wholeNumber * frac.denominator);
+            resultDenominator = frac.denominator * 1;
+            break;
+        case ARYTHMIC_TYPE::MULTIPLICATION:
+            resultNumerator = mixedNumerator * wholeNumber;
+            resultDenominator = frac.denominator * 1;
+            break;
+        case ARYTHMIC_TYPE::DIVISION:
+            resultNumerator = reversed ?  wholeNumber * frac.denominator : mixedNumerator * 1;
+            resultDenominator = reversed ? 1 * mixedNumerator : frac.denominator * wholeNumber;
+            break;
         }
 
-        return Frac((this->numerator * other.denominator) + (other.numerator * this->denominator), 
-            this->denominator * other.denominator);
+        // Convert to mixed fraction
+        resultWhole = resultNumerator / resultDenominator;
+        resultNumerator %= resultDenominator;
+    }
+    
+    Frac Frac::operator+(const Frac& other) {
+
+        // Convert both to improper fractions
+        int lhsNumerator = (this->whole * this->denominator) + this->numerator;
+        int rhsNumerator = (other.whole * other.denominator) + other.numerator;
+
+        int resultDenominator, resultNumerator, resultWhole;
+
+        // If denominators are not the same
+        if (this->denominator != other.denominator) {
+            // Find the common denominator
+            resultDenominator = this->denominator * other.denominator;
+
+            // Adjust the numerators to the common denominator
+            lhsNumerator *= other.denominator;
+            rhsNumerator *= this->denominator;
+
+            // Add the numerators
+            resultNumerator = lhsNumerator + rhsNumerator;
+        } else {
+            // If denominators are the same
+            resultDenominator = this->denominator;
+            resultNumerator = lhsNumerator + rhsNumerator;
+        }
+
+        // Convert to mixed fraction
+        resultWhole = resultNumerator / resultDenominator;
+        resultNumerator %= resultDenominator;
+
+        // Ensure denominator is positive
+        if (resultDenominator < 0) {
+            resultNumerator = -resultNumerator;
+            resultDenominator = -resultDenominator;
+        }
+
+        return Frac(resultWhole, resultNumerator, resultDenominator, true);
     }
     Frac Frac::operator+(int value){
-        if(willMultiplicationOverflow(this->denominator, value)){
-            throw std::overflow_error(OVERFLOW_ERROR);
-        }
-        if(willAdditionOverflow(this->numerator, (this->denominator * value))){
-            throw std::overflow_error(OVERFLOW_ERROR);
-        }
-        return Frac(this->numerator + (this->denominator * value), this->denominator);
+        int resultWhole, resultNumerator, resultDenominator = 0;
+        calcIntegerAndFraction(*this, value, resultWhole, resultNumerator, resultDenominator, ARYTHMIC_TYPE::ADDITION);
+        return Frac(resultWhole, resultNumerator, resultDenominator);
     }   
     Frac Frac::operator+(float value){
         return *(this) + Frac(value);
@@ -142,24 +198,46 @@ namespace FracLib {
     };
     
     Frac Frac::operator-(const Frac& other){
-        if(willMultiplicationOverflow(this->numerator, other.denominator) || 
-            willMultiplicationOverflow(this->denominator, other.numerator) || 
-            willMultiplicationOverflow(this->denominator, other.denominator)){
-                throw std::overflow_error(OVERFLOW_ERROR);
-            }
-        if(willSubtractionOverflow((this->numerator * other.denominator), (this->denominator * other.numerator))){
-            throw std::overflow_error(OVERFLOW_ERROR);
+        
+        // Convert to mixed fraction
+        int lhsNumerator = (this->whole * this->denominator) + this->numerator;
+        int rhsNumerator = (other.whole * other.denominator) + other.numerator;
+
+        int resultDenominator, resultNumerator, resultWhole;
+
+        // If denominators are not the same
+        if (this->denominator != other.denominator) {
+            // Find the common denominator
+            resultDenominator = this->denominator * other.denominator;
+
+            // Adjust the numerators to the common denominator
+            lhsNumerator *= other.denominator;
+            rhsNumerator *= this->denominator;
+
+            // Subtract the numerators
+            resultNumerator = lhsNumerator - rhsNumerator;
+        } else {
+            // If denominators are the same
+            resultDenominator = this->denominator;
+            resultNumerator = lhsNumerator - rhsNumerator;
         }
-        return Frac((this->numerator * other.denominator) - (this->denominator * other.numerator), (this->denominator * other.denominator));
+
+        // Convert to mixed fraction
+        resultWhole = resultNumerator / resultDenominator;
+        resultNumerator %= resultDenominator;
+
+        // Ensure denominator is positive
+        if (resultDenominator < 0) {
+            resultNumerator = -resultNumerator;
+            resultDenominator = -resultDenominator;
+        }
+
+        return Frac(resultWhole, resultNumerator, resultDenominator, true);
     }
     Frac Frac::operator-(int value){
-        if(willMultiplicationOverflow(this->denominator, value)){
-            throw std::overflow_error(OVERFLOW_ERROR);
-        }
-        if(willSubtractionOverflow(this->numerator, (this->denominator * value))){
-            throw std::overflow_error(OVERFLOW_ERROR);
-        }
-        return Frac(this->numerator - (this->denominator * value), this->denominator);
+        int resultWhole, resultNumerator, resultDenominator = 0;
+        calcIntegerAndFraction(*this, value, resultWhole, resultNumerator, resultDenominator, ARYTHMIC_TYPE::SUBTRACTION);
+        return Frac(resultWhole, resultNumerator, resultDenominator);
     }   
     Frac Frac::operator-(float value){
         return *(this) - Frac(value);
@@ -169,17 +247,25 @@ namespace FracLib {
     };
     
     Frac Frac::operator*(const Frac& other){
-        if(willMultiplicationOverflow(this->numerator, other.numerator) || 
-            willMultiplicationOverflow(this->denominator, other.denominator)){
-                throw std::overflow_error(OVERFLOW_ERROR);
-            }
-        return Frac(this->numerator * other.numerator, this->denominator * other.denominator);
+        // Convert to mixed fraction
+        int lhsNumerator = (this->whole * this->denominator) + this->numerator;
+        int rhsNumerator = (other.whole * other.denominator) + other.numerator;
+
+        int resultDenominator, resultNumerator, resultWhole;
+
+        resultNumerator = lhsNumerator * rhsNumerator;
+        resultDenominator = this->denominator * other.denominator;
+        
+        // Convert to mixed fraction
+        resultWhole = resultNumerator / resultDenominator;
+        resultNumerator %= resultDenominator;
+
+        return Frac(resultWhole, resultNumerator, resultDenominator, true);
     }
     Frac Frac::operator*(int value){
-        if(willMultiplicationOverflow(this->numerator, value)){
-            throw std::overflow_error(OVERFLOW_ERROR);
-        }
-        return Frac((this->numerator * value), this->denominator);
+        int resultWhole, resultNumerator, resultDenominator = 0;
+        calcIntegerAndFraction(*this, value, resultWhole, resultNumerator, resultDenominator, ARYTHMIC_TYPE::MULTIPLICATION);
+        return Frac(resultWhole, resultNumerator, resultDenominator);
     }
     Frac Frac::operator*(float value){
         return *(this) * Frac(value);
@@ -189,25 +275,23 @@ namespace FracLib {
     };
     
     Frac Frac::operator/(const Frac& other){
-        if (other.numerator == 0 || this->denominator == 0) {
-            throw std::invalid_argument(ZERO_DIVISOR_ERROR);
-        }
-        if(willMultiplicationOverflow(this->numerator, other.denominator) || 
-            willMultiplicationOverflow(this->denominator, other.numerator)){
-                throw std::overflow_error(OVERFLOW_ERROR);
-            }
-        // reciprocal of other than multiply
-        return Frac(this->numerator * other.denominator, this->denominator * other.numerator);
+        int lhsNumerator = (this->whole * this->denominator) + this->numerator;
+        int rhsNumerator = (other.whole * other.denominator) + other.numerator;
+
+        // For other, we set reciprocal then multiply 
+        int resultNumerator = lhsNumerator * other.denominator;
+        int resultDenominator = this->denominator * rhsNumerator;
+
+        // Convert to mixed fraction
+        int resultWhole = resultNumerator / resultDenominator;
+        resultNumerator %= resultDenominator;
+
+        return Frac(resultWhole, resultNumerator, resultDenominator, true);
     }
     Frac Frac::operator/(int value){
-        if (this->numerator == 0){
-            throw std::invalid_argument(ZERO_DIVISOR_ERROR);
-        }
-        if(willMultiplicationOverflow(this->denominator, value)){
-            throw std::overflow_error(OVERFLOW_ERROR);
-        }
-        // reciprocal
-        return Frac((this->denominator * value), this->numerator);
+        int resultWhole, resultNumerator, resultDenominator = 0;
+        calcIntegerAndFraction(*this, value, resultWhole, resultNumerator, resultDenominator, ARYTHMIC_TYPE::MULTIPLICATION);
+        return Frac(resultWhole, resultNumerator, resultDenominator);
     }
     Frac Frac::operator/(float value){
         return *(this) / Frac(value);
@@ -218,19 +302,14 @@ namespace FracLib {
 
     // Reversed order
     Frac operator+(int value, const Frac& frac) {
-        // Check for overflow in the intermediate calculations
-        if (willMultiplicationOverflow(value, frac.denominator)) {
-            throw std::overflow_error(Frac::OVERFLOW_ERROR);
-        }
-        if (willAdditionOverflow(frac.numerator, value * frac.denominator)) {
-            throw std::overflow_error(Frac::OVERFLOW_ERROR);
-        }
-
-        // Perform the addition
-        int newNumerator = frac.numerator + (value * frac.denominator);
-        int newDenominator = frac.denominator;
-
-        return Frac(newNumerator, newDenominator);
+        int resultWhole, resultNumerator, resultDenominator = 0;
+        calcIntegerAndFraction(frac, value, resultWhole, resultNumerator, resultDenominator, ARYTHMIC_TYPE::ADDITION);
+        return Frac(resultWhole, resultNumerator, resultDenominator);
+    }
+    Frac operator+(int value, Frac& frac) {
+        int resultWhole, resultNumerator, resultDenominator = 0;
+        calcIntegerAndFraction(frac, value, resultWhole, resultNumerator, resultDenominator, ARYTHMIC_TYPE::ADDITION);
+        return Frac(resultWhole, resultNumerator, resultDenominator);
     }
     Frac operator+(float value, Frac& frac){
         return Frac(value) + frac;
@@ -240,7 +319,14 @@ namespace FracLib {
     };
     
     Frac operator-(int value, const Frac& frac){
-        return Frac(frac.numerator - (frac.denominator * value), frac.denominator);
+        int resultWhole, resultNumerator, resultDenominator = 0;
+        calcIntegerAndFraction(frac, value, resultWhole, resultNumerator, resultDenominator, ARYTHMIC_TYPE::SUBTRACTION, true);
+        return Frac(resultWhole, resultNumerator, resultDenominator);
+    };
+    Frac operator-(int value, Frac& frac){
+        int resultWhole, resultNumerator, resultDenominator = 0;
+        calcIntegerAndFraction(frac, value, resultWhole, resultNumerator, resultDenominator, ARYTHMIC_TYPE::SUBTRACTION, true);
+        return Frac(resultWhole, resultNumerator, resultDenominator);
     };
     Frac operator-(float value, Frac& frac){
         return Frac(value) - frac;
@@ -260,13 +346,14 @@ namespace FracLib {
     };
     
     Frac operator/(int value, const Frac& frac){
-        if (frac.numerator == 0) {
-            throw std::invalid_argument("Division by zero not allowed. Denominator cannot be zero.");
-        }
-        if(willMultiplicationOverflow(value, frac.denominator)){
-            throw std::overflow_error(Frac::OVERFLOW_ERROR);
-        }
-        return Frac(value * frac.denominator, frac.numerator);
+        int resultWhole, resultNumerator, resultDenominator = 0;
+        calcIntegerAndFraction(frac, value, resultWhole, resultNumerator, resultDenominator, ARYTHMIC_TYPE::DIVISION, true);
+        return Frac(resultWhole, resultNumerator, resultDenominator);
+    };
+    Frac operator/(int value, Frac& frac){
+        int resultWhole, resultNumerator, resultDenominator = 0;
+        calcIntegerAndFraction(frac, value, resultWhole, resultNumerator, resultDenominator, ARYTHMIC_TYPE::DIVISION, true);
+        return Frac(resultWhole, resultNumerator, resultDenominator);
     };
     Frac operator/(float value, Frac& frac){
         return Frac(value) / frac;
@@ -279,6 +366,7 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Compound Operators
     //\\\\\\\\\\\\\\\\\\\\/
+    // TODO fix below
     void Frac::operator+=(const Frac& other) {
         // Check for overflow in intermediate calculations
         if (willMultiplicationOverflow(this->numerator, other.denominator) ||
@@ -394,6 +482,7 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Increment Decrement Operators
     //\\\\\\\\\\\\\\\\\\\\/
+
     void incrementLogic(int& whole, int& numerator, int& denominator, bool isPrefix){
         if (whole != 0) {
             
@@ -479,6 +568,7 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Unary Operators
     //\\\\\\\\\\\\\\\\\\\\/
+
     Frac Frac::operator-(){
         // Handles negating numerator (+/-)
         if (this->whole != 0) return Frac(-this->whole, this->numerator, this->denominator);
@@ -489,6 +579,7 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Comparision Operators
     //\\\\\\\\\\\\\\\\\\\\/
+
     bool Frac::operator==(const Frac& other) const {
         // Convert both fractions to improper form
         int lhsNumerator = this->whole * this->denominator + this->numerator;
@@ -613,6 +704,7 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Misc Operators
     //\\\\\\\\\\\\\\\\\\\\/
+
     std::ostream& operator<<(std::ostream& os, const Frac& frac) {
         if (frac.whole != 0)
             os << frac.whole << " ";
@@ -689,6 +781,7 @@ namespace FracLib {
     //\\\\\\\\\\\\\\\\\\\\/
     // Methods
     //\\\\\\\\\\\\\\\\\\\\/
+    
     Frac Frac::toImproper(const Frac& frac) {
         Frac result = frac;
 
@@ -715,12 +808,7 @@ namespace FracLib {
     }
     
     void Frac::simplify() {
-        if(denominator == 0) return; // quick fix for 0
-        if (numerator == 0) { // Handle the case where numerator is 0
-            whole = 0;
-            denominator = 1; // Standardize to 0/1
-            return;
-        }
+        if(denominator == 0 || numerator == 0) return; // quick fix for 0
 
         // Determine the whole part and adjust the numerator
         whole += numerator / denominator;
@@ -731,7 +819,6 @@ namespace FracLib {
             numerator += std::abs(denominator);
             whole -= (numerator > 0) ? 1 : 0;
         }
-
 
         int a = std::abs(numerator); // Use absolute values
         int b = std::abs(denominator);

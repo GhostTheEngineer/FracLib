@@ -3,7 +3,8 @@ This file shows this current version only. To view past changes, please navigate
 
 ## Version 1.1.0
 **WIP** - this version is not complete yet. The following needs must be met to now consider `whole` numbers:
-- Arithmetic operations
+- Compound operations
+- Clean up/Refactor
 
 The addition of improper fraction support and `whole` number attribute fixes some expectation issues - for instance `Frac f(1.5f);` expects `1 1/2` but got `1/2`.
 

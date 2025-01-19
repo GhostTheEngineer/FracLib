@@ -69,12 +69,71 @@ TEST(Relational) {
     Tester::assertTrue(mixed >= mixed2); // change operator to test other relations
 }
 
-TEST(Addition) {
-    Frac mixed(1, 1, 2); 
+TEST(Frac2Frac_Addition) {
+    Frac mixed(1, 1, 4); 
     Frac result = mixed + Frac(1, 1, 2);
-    Tester::assertEqual(std::string("3 0/2"), Frac::toString(result)); // change operator to test other relations
+    Tester::assertEqual(std::string("2 3/4"), Frac::toString(result));
 }
 
+TEST(Int_Addition) {
+    Frac mixed(1, 1, 2); 
+    Frac result = 5 + mixed;
+    Tester::assertEqual(std::string("6 1/2"), Frac::toString(result));
+}
+
+TEST(Str_Addition) {
+    Frac mixed(1, 1, 2); 
+    Frac result = mixed + "1 1/2";
+    Tester::assertEqual(std::string("3 0/2"), Frac::toString(result));
+}
+
+TEST(Float_Addition) {
+    Frac mixed(1, 1, 2); 
+    Frac result = mixed + 1.5f;
+    Tester::assertEqual(std::string("3 0/2"), Frac::toString(result));
+}
+
+TEST(Frac2Frac_Subtraction) {
+    Frac mixed(2, 1, 4); 
+    Frac result = mixed - Frac(1, 1, 2);
+    Tester::assertEqual(std::string("3/4"), Frac::toString(result));
+}
+
+TEST(Int_Subtraction) {
+    Frac mixed(2, 1, 2); 
+    Frac result = mixed - 3;
+    Tester::assertEqual(std::string("-1/2"), Frac::toString(result));
+}
+
+TEST(Int_SubtractionReversed) {
+    Frac mixed(2, 1, 2); 
+    Frac result = 3 - mixed;
+    Tester::assertEqual(std::string("1/2"), Frac::toString(result));
+}
+
+TEST(Frac2Frac_Multiplication) {
+    Frac mixed(2, 1, 4); 
+    Frac result = mixed * Frac(1, 1, 2);
+    Tester::assertEqual(std::string("3 3/8"), Frac::toString(result));
+}
+
+TEST(Int_Multiplication) {
+    Frac mixed(2, 1, 2); 
+    Frac result = mixed * 3;
+    Tester::assertEqual(std::string("7 1/2"), Frac::toString(result));
+}
+
+TEST(Frac2Frac_Division) {
+    Frac mixed(2, 1, 2); 
+    Frac result = mixed / Frac(4, 1, 2);
+    Tester::assertEqual(std::string("5/9"), Frac::toString(result));
+}
+
+TEST(Int_Division) {
+    Frac mixed(2, 1, 2); 
+    Frac result = 5 / mixed;
+    Tester::assertEqual(std::string("2 0/5"), Frac::toString(result));
+}
 
 int main() {
     Tester::runTests();
